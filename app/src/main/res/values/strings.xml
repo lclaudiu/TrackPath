@@ -1,4 +1,8 @@
 <resources>
-    <string name="app_name">TrackPath</string>
-    <string name="title_activity_main">Map</string>
+    <string name="app_name">Track Path</string>
+    <string name="title_activity_main">Track Path</string>
+
+    <string name="access_to_memory">This app needs access to memory.</string>
+    <string name="settings">Settings</string>
+    <string name="access_to_fine_location">This app needs access to fine location.</string>
 </resources>
