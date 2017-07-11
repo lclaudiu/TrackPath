@@ -11,13 +11,18 @@ import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.CheckBox;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.trackpath.lclaudiu.trackpath.interfaces.MapCallbacksInterface;
 import com.trackpath.lclaudiu.trackpath.interfaces.PresenterInterface;
 
@@ -40,12 +45,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         findViewById(R.id.rec_stop_track_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!((CheckBox) v).isChecked()) {
+                if (((CheckBox) v).isChecked()) {
                     if (mPresenter == null) {
-                        mPresenter = new TrackPresenter();
+                        mPresenter = new TrackPresenter(MainActivity.this, MainActivity.this);
                     }
-
-                    mPresenter.startRecoding(MainActivity.this, MainActivity.this);
+                    if (mPresenter != null) {
+                        mPresenter.startRecoding();
+                    }
                 } else {
                     if (mPresenter != null) {
                         mPresenter.stopRecording();
@@ -54,9 +60,36 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+
         // if someone wants to break the app will remove the permissions while running the app
         permissionForReadWriteDisk();
         Utils.createTracksDirectory(this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (Utils.isMyServiceRunning(this, LocationService.class)
+                && mPresenter == null) {
+            mPresenter = new TrackPresenter(MainActivity.this, MainActivity.this);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (Utils.isMyServiceRunning(this, LocationService.class)) {
+            ((CheckBox) findViewById(R.id.rec_stop_track_button)).setChecked(true);
+        } else {
+            ((CheckBox) findViewById(R.id.rec_stop_track_button)).setChecked(false);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mPresenter.disconnectPresenter();
     }
 
     @Override
@@ -74,15 +107,31 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setMyLocationEnabled(true);
         mUiSettings = mMap.getUiSettings();
 
-        // Keep the UI Settings state in sync with the checkboxes.
-        mUiSettings.setZoomControlsEnabled(true); //isChecked(R.id.zoom_buttons_toggle));
-        mUiSettings.setCompassEnabled(true); //isChecked(R.id.compass_toggle));
-        mUiSettings.setMyLocationButtonEnabled(true); //isChecked(R.id.mylocationbutton_toggle));
-        mMap.setMyLocationEnabled(true); //isChecked(R.id.mylocationlayer_toggle));
-        mUiSettings.setScrollGesturesEnabled(true); //isChecked(R.id.scroll_toggle));
-        mUiSettings.setZoomGesturesEnabled(true); //isChecked(R.id.zoom_gestures_toggle));
-        mUiSettings.setTiltGesturesEnabled(true); //isChecked(R.id.tilt_toggle));
-        mUiSettings.setRotateGesturesEnabled(true); //isChecked(R.id.rotate_toggle));
+        mUiSettings.setZoomControlsEnabled(true);
+        mUiSettings.setCompassEnabled(true);
+        mUiSettings.setMyLocationButtonEnabled(true);
+        mMap.setMyLocationEnabled(true);
+        mUiSettings.setScrollGesturesEnabled(true);
+        mUiSettings.setZoomGesturesEnabled(true);
+        mUiSettings.setTiltGesturesEnabled(true);
+        mUiSettings.setRotateGesturesEnabled(true);
+    }
+
+    @Override
+    public void updateUI(Track track) {
+        if (mMap != null
+                && track != null
+                && track.getmTrackPoints() != null
+                && track.getmTrackPoints().size() > 0) {
+            PolylineOptions polyline = new PolylineOptions();
+            LatLngBounds bounds = null;
+            if (track.path(polyline, bounds)) {
+                Polyline polyline1 = mMap.addPolyline(polyline);
+                int padding = 20;
+                CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+                mMap.animateCamera(cu);
+            }
+        }
     }
 
     @Override

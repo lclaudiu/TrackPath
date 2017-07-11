@@ -15,23 +15,31 @@ import java.util.LinkedList;
 
 public class TrackPresenter implements PresenterInterface, TrackModelToPresenterInterface {
 
+    private Activity mActivity;
     private MapCallbacksInterface mActivityCallBack;
     boolean mBound = false;
     private TrackModelInterface mTrackModel;
 
-    @Override
-    public void startRecoding(Activity activity, MapCallbacksInterface callBack) {
+    public TrackPresenter(Activity activity, MapCallbacksInterface callBack) {
+        this.mActivity = activity;
         this.mActivityCallBack = callBack;
         if (mTrackModel == null) {
             mTrackModel = new TrackModel(activity, this);
         }
+    }
 
-        mTrackModel.startRecording();
+    @Override
+    public void startRecoding() {
+        if (mTrackModel != null) {
+            mTrackModel.startRecording();
+        }
     }
 
     @Override
     public void stopRecording() {
-        mTrackModel.stopRecording();
+        if (mTrackModel != null) {
+            mTrackModel.stopRecording();
+        }
     }
 
     @Override
@@ -55,6 +63,14 @@ public class TrackPresenter implements PresenterInterface, TrackModelToPresenter
     public void returnTrack(Track track) {
         if (this.mActivityCallBack != null) {
             this.mActivityCallBack.displayTrack(track);
+        }
+    }
+
+
+    @Override
+    public void disconnectPresenter() {
+        if (mTrackModel != null) {
+            mTrackModel.disconnectModelFromService();
         }
     }
 }

@@ -2,6 +2,11 @@ package com.trackpath.lclaudiu.trackpath;
 
 import android.location.Location;
 
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.PolylineOptions;
+
 import java.util.LinkedList;
 
 /**
@@ -26,5 +31,24 @@ public class Track {
 
     public LinkedList<Location> getmTrackPoints() {
         return mTrackPoints;
+    }
+
+    public boolean path(PolylineOptions polyline, LatLngBounds bounds) {
+        if (mTrackPoints != null
+                && mTrackPoints.size() > 0) {
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+            for (Location location : mTrackPoints) {
+                LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
+                polyline.add(ll);
+                builder.include(ll);
+            }
+            bounds = builder.build();
+
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 }

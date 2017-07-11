@@ -10,6 +10,12 @@ import java.util.LinkedList;
 
 public interface MapCallbacksInterface {
     /**
+     * This is a callback to display tje ongoing track
+     * @param track - the track to be displayed
+     */
+    void updateUI(Track track);
+
+    /**
      * This is a callback to display one single path
      * @param track - the track to be displayed
      */

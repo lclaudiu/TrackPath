@@ -10,7 +10,7 @@ public interface PresenterInterface {
     /**
      * Request to start recording a path
      */
-    void startRecoding(Activity activity, MapCallbacksInterface callBack);
+    void startRecoding();
 
     /**
      * Request to stop a recording
@@ -27,4 +27,9 @@ public interface PresenterInterface {
      * @param name the name of the path (file)
      */
     void getTrack(String name);
+
+    /**
+     * This must be called when the activity is on stop so that to detach from the service
+     */
+    void disconnectPresenter();
 }

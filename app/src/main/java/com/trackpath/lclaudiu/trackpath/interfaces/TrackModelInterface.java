@@ -26,4 +26,9 @@ public interface TrackModelInterface {
      * @param name the name of the path (file)
      */
     void getTrack(String name);
+
+    /**
+     * This must be called when the activity is on stop so that to detach from the service
+     */
+    void disconnectModelFromService();
 }

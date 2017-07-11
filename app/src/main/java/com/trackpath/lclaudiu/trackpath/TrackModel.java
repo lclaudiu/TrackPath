@@ -40,6 +40,10 @@ public class TrackModel implements TrackModelInterface {
     public TrackModel(Context context, PresenterInterface presenter) {
         this.mContext = context;
         this.mPresenter = presenter;
+
+        if (Utils.isMyServiceRunning(mContext, LocationService.class) && !mIsBound) {
+            doBindService();
+        }
     }
 
     /**
@@ -48,7 +52,7 @@ public class TrackModel implements TrackModelInterface {
     @Override
     public void startRecording() {
         if (mContext != null && !mIsBound) {
-            if (!isMyServiceRunning(LocationService.class)) {
+            if (!Utils.isMyServiceRunning(mContext, LocationService.class)) {
                 Intent intent = new Intent(mContext, LocationService.class);
                 mContext.startService(intent);
             }
@@ -62,7 +66,7 @@ public class TrackModel implements TrackModelInterface {
      */
     @Override
     public void stopRecording() {
-        if (isMyServiceRunning(LocationService.class) && mIsBound) {
+        if (Utils.isMyServiceRunning(mContext, LocationService.class) && mIsBound) {
             Message msg = Message.obtain(null, LocationService.STOP_GET_LOCATION);
             msg.replyTo = mMessenger;
             try {
@@ -85,14 +89,9 @@ public class TrackModel implements TrackModelInterface {
 
     }
 
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
+    @Override
+    public void disconnectModelFromService() {
+        doUnbindService();
     }
 
     /**
@@ -148,9 +147,7 @@ public class TrackModel implements TrackModelInterface {
         if (mIsBound) {
             // Detach existing connection.
             mContext.unbindService(mConnection);
-            if (mContext.stopService(new Intent(mContext, LocationService.class))) {
-                mIsBound = false;
-            }
+            mIsBound = false;
         }
     }
 }

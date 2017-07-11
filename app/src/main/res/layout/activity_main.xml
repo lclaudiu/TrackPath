@@ -22,7 +22,7 @@
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
             android:layout_margin="8dp"
-            android:checked="false"/>
+            android:checked="true"/>
 
     </RelativeLayout>
 </FrameLayout>
