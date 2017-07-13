@@ -1,6 +1,5 @@
 package com.trackpath.lclaudiu.trackpath;
 
-import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -10,10 +9,11 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.widget.Toast;
 
-import com.trackpath.lclaudiu.trackpath.interfaces.PresenterInterface;
 import com.trackpath.lclaudiu.trackpath.interfaces.TrackModelInterface;
+import com.trackpath.lclaudiu.trackpath.interfaces.TrackModelToPresenterInterface;
+
+import java.util.LinkedList;
 
 /**
  * This class represents the Model.
@@ -23,7 +23,7 @@ import com.trackpath.lclaudiu.trackpath.interfaces.TrackModelInterface;
  */
 
 public class TrackModel implements TrackModelInterface {
-    private PresenterInterface mPresenter;
+    private TrackModelToPresenterInterface mPresenter;
     private Context mContext;
 
     /**
@@ -37,13 +37,14 @@ public class TrackModel implements TrackModelInterface {
 
     private final Messenger mMessenger = new Messenger(new IncomingHandler());
 
-    public TrackModel(Context context, PresenterInterface presenter) {
+    /**
+     * This is the name of the file where the active service is saving the path
+     */
+    private String mCurrentPathName;
+
+    TrackModel(Context context, TrackModelToPresenterInterface presenter) {
         this.mContext = context;
         this.mPresenter = presenter;
-
-        if (Utils.isMyServiceRunning(mContext, LocationService.class) && !mIsBound) {
-            doBindService();
-        }
     }
 
     /**
@@ -81,7 +82,7 @@ public class TrackModel implements TrackModelInterface {
 
     @Override
     public void getListOfTracks() {
-
+        new ReadAllFileTask().execute(this, mCurrentPathName);
     }
 
     @Override
@@ -94,6 +95,27 @@ public class TrackModel implements TrackModelInterface {
         doUnbindService();
     }
 
+    @Override
+    public void updateUI(Track track) {
+        if (mPresenter != null) {
+            mPresenter.updateUI(track);
+        }
+    }
+
+    @Override
+    public void bindToService() {
+        if (Utils.isMyServiceRunning(mContext, LocationService.class) && !mIsBound) {
+            doBindService();
+        }
+    }
+
+    @Override
+    public void updateMapWithAllTracks(LinkedList<Track> tracks) {
+        if (mPresenter != null) {
+            mPresenter.returnListOfTracks(tracks);
+        }
+    }
+
     /**
      * Handler of incoming messages from service.
      */
@@ -102,7 +124,8 @@ public class TrackModel implements TrackModelInterface {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case LocationService.MSG_LOCATION:
-                    // update UI with the new location
+                    mCurrentPathName = msg.getData().getString(LocationService.MSG_LOCATION_KEY);
+                    new ReadFileTask().execute(mCurrentPathName, TrackModel.this);
                     break;
                 default:
                     super.handleMessage(msg);
@@ -133,21 +156,19 @@ public class TrackModel implements TrackModelInterface {
             // unexpectedly disconnected -- that is, its process crashed.
             mService = null;
             mIsBound = false;
-
-            // As part of the sample, tell the user what happened.
-            Toast.makeText(mContext, "Disconnected", Toast.LENGTH_SHORT).show();
         }
     };
 
-    void doBindService() {
+    private void doBindService() {
         mContext.bindService(new Intent(mContext, LocationService.class), mConnection, Context.BIND_AUTO_CREATE);
     }
 
-    void doUnbindService() {
+    private void doUnbindService() {
         if (mIsBound) {
             // Detach existing connection.
             mContext.unbindService(mConnection);
             mIsBound = false;
+            mCurrentPathName = null;
         }
     }
 }

@@ -29,6 +29,8 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.gson.Gson;
 
+import org.w3c.dom.Text;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -82,6 +84,9 @@ public class LocationService extends Service {
      */
     private Location mLocation;
 
+    /**
+     * The name of the file where is recorded the current track
+     */
     private String mCurrentTrackFileName;
 
     private NotificationManager mNotificationManager;
@@ -146,11 +151,7 @@ public class LocationService extends Service {
         return mMessenger.getBinder();
     }
 
-    /**
-     * Target we publish for clients to send messages to IncomingHandler.
-     */
     final Messenger mMessenger = new Messenger(new IncomingHandler());
-
 
     @Override
     public void onDestroy() {
@@ -185,9 +186,17 @@ public class LocationService extends Service {
         // The PendingIntent to launch our activity if the user selects this notification
         PendingIntent activityIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
 
-        return new NotificationCompat.Builder(this).addAction(R.drawable.ic_launch, "Start the activity", activityIntent).setContentText("The path is recorded").setContentTitle("Active track service").setOngoing(true).setPriority(Notification.PRIORITY_HIGH).setSmallIcon(R.drawable.ic_launch).setTicker("Active track service").setWhen(System.currentTimeMillis()).build();
+        return new NotificationCompat.Builder(this)
+                .addAction(R.drawable.ic_launch, "Start the activity", activityIntent)
+                .setContentText("The path is recorded")
+                .setContentTitle("Active track service")
+                .setOngoing(true)
+                .setPriority(Notification.PRIORITY_HIGH)
+                .setSmallIcon(R.drawable.ic_launch)
+                .setTicker("Active track service")
+                .setWhen(System.currentTimeMillis())
+                .build();
     }
-
 
     private void getLastLocation() {
         try {
@@ -212,16 +221,15 @@ public class LocationService extends Service {
     }
 
     private void onNewLocation(Location location) {
-        if (mClientMessanger == null) {
-            return;
-        }
-
         Message responseMessage = Message.obtain(null, LocationService.MSG_LOCATION);
-        Bundle msgBundle = new Bundle();
         String locationGson = new Gson().toJson(location);
         saveLocationToFile(locationGson + "\n");
 
-        msgBundle.putString(MSG_LOCATION_KEY, locationGson);
+        if (mClientMessanger == null) {
+            return;
+        }
+        Bundle msgBundle = new Bundle();
+        msgBundle.putString(MSG_LOCATION_KEY, mCurrentTrackFileName);
         responseMessage.setData(msgBundle);
         try {
             mClientMessanger.send(responseMessage);
@@ -241,25 +249,27 @@ public class LocationService extends Service {
     }
 
     private void saveLocationToFile(String location) {
-        try {
-            URI fileUri;
+        if (!TextUtils.isEmpty(mCurrentTrackFileName)) {
             try {
-                fileUri = new URI(null, null, Environment.getExternalStorageDirectory().toURI().toString() + Constants.DIRECTORY_NAME + "/" + mCurrentTrackFileName + ".txt", null, null);
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-                return;
-            }
-            File file = new File(fileUri);
-            if (!file.exists()) {
-                file.createNewFile();
-            }
+                URI fileUri;
+                try {
+                    fileUri = new URI(null, null, Environment.getExternalStorageDirectory().toURI().toString() + Constants.DIRECTORY_NAME + "/" + mCurrentTrackFileName + ".txt", null, null);
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                File file = new File(fileUri);
+                if (!file.exists()) {
+                    file.createNewFile();
+                }
 
-            FileWriter fileWriter = new FileWriter(file, true);
-            fileWriter.append(location);
-            fileWriter.flush();
-            fileWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+                FileWriter fileWriter = new FileWriter(file, true);
+                fileWriter.append(location);
+                fileWriter.flush();
+                fileWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

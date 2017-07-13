@@ -6,10 +6,10 @@ import android.net.Uri;
 import android.provider.Settings;
 import android.view.View;
 
-public class PermisionSettings implements View.OnClickListener {
+class PermisionSettings implements View.OnClickListener {
     private Activity mActivity;
 
-    public PermisionSettings(Activity activity) {
+    PermisionSettings(Activity activity) {
         this.mActivity = activity;
     }
 

@@ -29,7 +29,12 @@ public interface PresenterInterface {
     void getTrack(String name);
 
     /**
-     * This must be called when the activity is on stop so that to detach from the service
+     * This must be called when the activity is on stop so that the Model to detach from the service
      */
     void disconnectPresenter();
+
+    /**
+     * Demand Model to bind to running service
+     */
+    void bindModelToService();
 }

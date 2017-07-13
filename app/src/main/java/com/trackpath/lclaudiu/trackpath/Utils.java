@@ -12,11 +12,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * Created by Kanly on 11/07/2017.
- */
-
-public class Utils {
+class Utils {
 
     /**
      * Creates the directory where the tracks are saved
@@ -30,17 +26,16 @@ public class Utils {
 
         try {
             directoryUri = new URI(null, null, Environment.getExternalStorageDirectory().toURI().toString() + Constants.DIRECTORY_NAME, null, null);
+
+            directory = new File(directoryUri);
+            if (!directory.exists()) {
+                directoryExists = makeDirectory(directoryUri);
+            }
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
 
-        directory = new File(directoryUri);
-        if (!directory.exists()) {
-            directoryExists = makeDirectory(directoryUri);
-        }
-
         return directoryExists;
-
     }
 
     private static boolean makeDirectory(URI directoryName) {
@@ -54,7 +49,7 @@ public class Utils {
         return createdDirectory;
     }
 
-    public static String getStringDate(Long timeMiis) {
+    static String getStringDate(Long timeMiis) {
         Date dateToConvert = new Date(timeMiis);
         Calendar calendarDate = Calendar.getInstance(Locale.getDefault());
         calendarDate.setTime(dateToConvert);
@@ -64,7 +59,7 @@ public class Utils {
         return format.format(calendarDate.getTime());
     }
 
-    public static boolean isMyServiceRunning(Context context, Class<?> serviceClass) {
+    static boolean isMyServiceRunning(Context context, Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
             if (serviceClass.getName().equals(service.service.getClassName())) {

@@ -22,7 +22,48 @@
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
             android:layout_margin="8dp"
-            android:checked="true"/>
+            android:checked="true"
+            android:text="@string/record_track"/>
+
+        <TextView
+            android:id="@+id/show_all_tracks"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@id/rec_stop_track_button"
+            android:layout_below="@id/rec_stop_track_button"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:drawableLeft="@drawable/ic_list_black_36dp"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:text="@string/show_all_tracks"/>
+
+        <TextView
+            android:id="@+id/clear_map"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@id/rec_stop_track_button"
+            android:layout_below="@id/show_all_tracks"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:drawableLeft="@drawable/ic_clear_all_black_36dp"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:text="@string/clear_map"/>
+
+        <TextView
+            android:id="@+id/show_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@id/rec_stop_track_button"
+            android:layout_below="@id/clear_map"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:drawableLeft="@drawable/ic_info_black_36dp"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:text="@string/show_info"
+            android:visibility="gone"/>
 
     </RelativeLayout>
 </FrameLayout>

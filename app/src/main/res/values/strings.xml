@@ -5,4 +5,9 @@
     <string name="access_to_memory">This app needs access to memory.</string>
     <string name="settings">Settings</string>
     <string name="access_to_fine_location">This app needs access to fine location.</string>
+    <string name="all_tracks">All Tracks List</string>
+    <string name="show_all_tracks">Show all tracks</string>
+    <string name="clear_map">Clear map</string>
+    <string name="record_track">Record track</string>
+    <string name="show_info">Show track info</string>
 </resources>

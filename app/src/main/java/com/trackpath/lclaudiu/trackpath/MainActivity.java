@@ -1,7 +1,9 @@
 package com.trackpath.lclaudiu.trackpath;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
@@ -10,6 +12,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -19,9 +22,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.trackpath.lclaudiu.trackpath.interfaces.MapCallbacksInterface;
 import com.trackpath.lclaudiu.trackpath.interfaces.PresenterInterface;
@@ -30,9 +31,13 @@ import java.util.LinkedList;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback, MapCallbacksInterface {
 
+    static final int PICK_TRACK = 0;
+
     private GoogleMap mMap;
-    private UiSettings mUiSettings;
     private PresenterInterface mPresenter;
+    public static LinkedList<Track> mTracksList;
+
+    private Track mTrackDisplayed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +46,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        if (mPresenter == null) {
+            mPresenter = new TrackPresenter(MainActivity.this, MainActivity.this);
+        }
 
         findViewById(R.id.rec_stop_track_button).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,19 +69,37 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        findViewById(R.id.show_all_tracks).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mPresenter != null) {
+                    mPresenter.getListOfTracks();
+                }
+            }
+        });
 
-        // if someone wants to break the app will remove the permissions while running the app
+        findViewById(R.id.clear_map).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mMap != null) {
+                    mMap.clear();
+                }
+                mTrackDisplayed = null;
+                mTracksList = null;
+                findViewById(R.id.show_info).setVisibility(View.GONE);
+            }
+        });
+
+        findViewById(R.id.show_info).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                TrackInfoDialog.showDialog(MainActivity.this, mTrackDisplayed);
+            }
+        });
+
+        // if someone wants to break the app will remove the permissions while the app is running
         permissionForReadWriteDisk();
         Utils.createTracksDirectory(this);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        if (Utils.isMyServiceRunning(this, LocationService.class)
-                && mPresenter == null) {
-            mPresenter = new TrackPresenter(MainActivity.this, MainActivity.this);
-        }
     }
 
     @Override
@@ -81,6 +108,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         if (Utils.isMyServiceRunning(this, LocationService.class)) {
             ((CheckBox) findViewById(R.id.rec_stop_track_button)).setChecked(true);
+
+            if (mPresenter == null) {
+                mPresenter = new TrackPresenter(MainActivity.this, MainActivity.this);
+            }
+            mPresenter.bindModelToService();
         } else {
             ((CheckBox) findViewById(R.id.rec_stop_track_button)).setChecked(false);
         }
@@ -89,7 +121,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onStop() {
         super.onStop();
-        mPresenter.disconnectPresenter();
+        if (mPresenter != null) {
+            mPresenter.disconnectPresenter();
+        }
     }
 
     @Override
@@ -100,12 +134,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Bucharest"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             permissionLocation();
             return;
         }
         mMap.setMyLocationEnabled(true);
-        mUiSettings = mMap.getUiSettings();
+        UiSettings mUiSettings = mMap.getUiSettings();
 
         mUiSettings.setZoomControlsEnabled(true);
         mUiSettings.setCompassEnabled(true);
@@ -118,15 +154,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void updateUI(Track track) {
-        if (mMap != null
-                && track != null
-                && track.getmTrackPoints() != null
-                && track.getmTrackPoints().size() > 0) {
-            PolylineOptions polyline = new PolylineOptions();
-            LatLngBounds bounds = null;
-            if (track.path(polyline, bounds)) {
-                Polyline polyline1 = mMap.addPolyline(polyline);
+    public void updateUI(PolylineOptions polyline, LatLngBounds bounds, boolean livePosition) {
+        if (mMap != null && polyline != null && bounds != null) {
+            if (livePosition) {
+                mMap.addPolyline(polyline.color(Color.RED));
+            } else {
+                mMap.addPolyline(polyline.color(Color.BLUE));
+            }
+            if (mTrackDisplayed == null || (mTrackDisplayed != null && !livePosition)) {
                 int padding = 20;
                 CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
                 mMap.animateCamera(cu);
@@ -135,13 +170,39 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void displayTrack(Track track) {
-
+    public void displayTrack(Track track, boolean livePosition) {
+        updateUI(track.getPolyline(), track.getBounds(), livePosition);
     }
 
     @Override
     public void displayTracksList(LinkedList<Track> tracksList) {
+        if (tracksList != null && tracksList.size() > 0) {
+            mTracksList = tracksList;
 
+            Intent chooseTrack = new Intent(this, AllTracksActivity.class);
+            startActivityForResult(chooseTrack, PICK_TRACK);
+        } else {
+            Toast.makeText(this, "No file recorded", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == PICK_TRACK) {
+            if (resultCode == RESULT_OK) {
+                int position = data.getIntExtra("position", -1);
+                if (mTracksList != null
+                        && position > -1
+                        && position < mTracksList.size()) {
+                    if (mMap != null) {
+                        mMap.clear();
+                    }
+                    mTrackDisplayed = mTracksList.get(position);
+                    displayTrack(mTracksList.get(position), false);
+                    findViewById(R.id.show_info).setVisibility(View.VISIBLE);
+                }
+            }
+        }
     }
 
     private void permissionForReadWriteDisk() {
@@ -172,7 +233,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
             case Constants.PERMISSIONS_FOR_WRITE_EXTERNAL_STORAGE_ID: {
-                // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     permissionLocation();
                 }

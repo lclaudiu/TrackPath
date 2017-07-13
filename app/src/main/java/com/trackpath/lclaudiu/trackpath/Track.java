@@ -19,31 +19,41 @@ public class Track {
      */
     private String mName;
     private LinkedList<Location> mTrackPoints;
+    private PolylineOptions mPolyline = new PolylineOptions();
+    private LatLngBounds mBounds;
 
-    void Track(String name, LinkedList<Location> points) {
+    public Track(String name, LinkedList<Location> points) {
         this.mName = name;
         this.mTrackPoints = points;
     }
 
-    public String getmName() {
+    public String getName() {
         return mName;
     }
 
-    public LinkedList<Location> getmTrackPoints() {
+    public LinkedList<Location> getTrackPoints() {
         return mTrackPoints;
     }
 
-    public boolean path(PolylineOptions polyline, LatLngBounds bounds) {
+    public PolylineOptions getPolyline() {
+        return mPolyline;
+    }
+
+    public LatLngBounds getBounds() {
+        return mBounds;
+    }
+
+    public boolean path() {
         if (mTrackPoints != null
                 && mTrackPoints.size() > 0) {
             LatLngBounds.Builder builder = new LatLngBounds.Builder();
 
             for (Location location : mTrackPoints) {
                 LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
-                polyline.add(ll);
+                mPolyline.add(ll);
                 builder.include(ll);
             }
-            bounds = builder.build();
+            mBounds = builder.build();
 
             return true;
         }

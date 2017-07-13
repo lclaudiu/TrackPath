@@ -13,14 +13,13 @@ import java.util.LinkedList;
  * The presenter class
  */
 
-public class TrackPresenter implements PresenterInterface, TrackModelToPresenterInterface {
+class TrackPresenter implements PresenterInterface, TrackModelToPresenterInterface {
 
     private Activity mActivity;
     private MapCallbacksInterface mActivityCallBack;
-    boolean mBound = false;
     private TrackModelInterface mTrackModel;
 
-    public TrackPresenter(Activity activity, MapCallbacksInterface callBack) {
+    TrackPresenter(Activity activity, MapCallbacksInterface callBack) {
         this.mActivity = activity;
         this.mActivityCallBack = callBack;
         if (mTrackModel == null) {
@@ -44,7 +43,9 @@ public class TrackPresenter implements PresenterInterface, TrackModelToPresenter
 
     @Override
     public void getListOfTracks() {
-
+        if (mTrackModel != null) {
+            mTrackModel.getListOfTracks();
+        }
     }
 
     @Override
@@ -62,7 +63,14 @@ public class TrackPresenter implements PresenterInterface, TrackModelToPresenter
     @Override
     public void returnTrack(Track track) {
         if (this.mActivityCallBack != null) {
-            this.mActivityCallBack.displayTrack(track);
+            this.mActivityCallBack.displayTrack(track, false);
+        }
+    }
+
+    @Override
+    public void updateUI(Track track) {
+        if (this.mActivityCallBack != null && track.getPolyline() != null && track.getBounds() != null) {
+            this.mActivityCallBack.updateUI(track.getPolyline(), track.getBounds(), true);
         }
     }
 
@@ -72,5 +80,14 @@ public class TrackPresenter implements PresenterInterface, TrackModelToPresenter
         if (mTrackModel != null) {
             mTrackModel.disconnectModelFromService();
         }
+    }
+
+    @Override
+    public void bindModelToService() {
+        if (mTrackModel == null) {
+            mTrackModel = new TrackModel(mActivity, this);
+        }
+
+        mTrackModel.bindToService();
     }
 }
